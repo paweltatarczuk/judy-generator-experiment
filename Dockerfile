@@ -46,6 +46,11 @@ RUN find . -name build.xml -exec perl -0777 -pi -e 's/(<\/project>)/\n  <import 
 # Copy judy libraries
 COPY lib lib/
 
+# Copy scripts
+COPY scripts/run-evosuite.sh run-evosuite.sh
+COPY scripts/run-randoop.sh run-randoop.sh
+RUN chmod +x run-evosuite.sh run-randoop.sh
+
 # Setup entrypoint
 COPY run.py run.py
 COPY entrypoint.sh /entrypoint.sh
