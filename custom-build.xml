@@ -1,0 +1,509 @@
+<project name="jacoco" basedir="." default="..." xmlns:jacoco="antlib:org.jacoco.ant">
+
+	<property name="report.dir"               value="${basedir}/report"/>
+	<property name="report.coverage"          value="${report.dir}/coverage"/>
+	<property name="report.judy"   		  value="${report.dir}/judy"/>
+	<property name="report.evosuite"          value="${report.dir}/evosuite"/>
+
+	<property name="build.randoop"         value="${build.home}/randoop"/>
+	<property name="build.judy"            value="${build.home}/judy"/>
+
+	<property name="judy.java"             value="judy-tests"/>
+	<property name="randoop.java"          value="randoop-tests"/>
+
+	<path id="randoop.lib">
+		<pathelement location="${lib.dir}/judy-generator-3.0.0-SNAPSHOT-jar-with-dependencies.jar" />
+	</path>
+
+	<path id="judy.lib">
+		<pathelement location="${lib.dir}/judy-generator-3.0.0-SNAPSHOT-jar-with-dependencies.jar" />
+	</path>
+
+	<path id="evosuite.lib">
+		<pathelement location="${lib.dir}/evosuite-1.0.3.jar" />
+	</path>
+
+	<!-- The dependency libraries for running/compiling tests -->
+	<path id="test.lib">
+		<fileset dir="test-lib">
+			<include name="**/*.jar"/>
+		</fileset>
+		<pathelement location="${lib.dir}/junit-4.11.jar" />
+		<path refid="hamcrest.lib" />
+	</path>
+
+
+	<path id="hamcrest.lib">
+		<pathelement location="${lib.dir}/java-hamcrest-2.0.0.0.jar"/>
+	</path>
+
+	<path id="junit.lib">
+		<pathelement location="${lib.dir}/junit-4.12.jar" />
+	</path>
+
+	<taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+		<classpath path="${lib.dir}/jacocoant.jar"/>
+	</taskdef>
+
+	<target name="compile-randoop" depends="compile"
+	    description="Compile Randoop generated tests">
+		<delete dir="${build.randoop}"/>
+		<mkdir dir="${build.randoop}"/>
+		<javac  srcdir="${randoop.java}"
+			destdir="${build.randoop}"
+			source="${compile.source}"
+			target="${compile.target}"
+			debug="${compile.debug}"
+			deprecation="${compile.deprecation}"
+			optimize="${compile.optimize}">
+
+			<classpath>
+				<path refid="source.lib" />
+				<path refid="test.lib" />
+				<path refid="randoop.lib" />
+				<pathelement path="${build.classes}"/>
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="compile-judy" depends="compile"
+	    description="Compile Judy generated tests">
+		<delete dir="${build.judy}"/>
+		<mkdir dir="${build.judy}"/>
+		<javac  srcdir="${judy.java}"
+			destdir="${build.judy}"
+			source="${compile.source}"
+			target="${compile.target}"
+			debug="${compile.debug}"
+			deprecation="${compile.deprecation}"
+			optimize="${compile.optimize}">
+
+			<classpath>
+				<path refid="source.lib" />
+				<path refid="test.lib" />
+				<path refid="judy.lib" />
+				<pathelement path="${build.classes}"/>
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="coverage-analyze-tests" depends="compile,compile-tests"
+	  description="Run uset tests coverage analize">
+		<delete file="${build.home}/jacoco.exec" />
+		<delete dir="${report.coverage}/tests" />
+
+		<jacoco:coverage destfile="${build.home}/jacoco.exec">
+			<junit printsummary="yes" haltonfailure="no" fork="yes"
+			  showoutput="yes">
+				<formatter type="plain" usefile="false" />
+
+				<batchtest fork="yes">
+					<fileset dir="${test.java}">
+						<include name="**/*.java"/>
+					</fileset>
+				</batchtest>
+
+				<classpath>
+					<pathelement path="${build.tests}" />
+					<pathelement path="${build.classes}" />
+					<path refid="source.lib" />
+					<path refid="test.lib" />
+				</classpath>
+			</junit>
+		</jacoco:coverage>
+	
+		<jacoco:report>
+			<executiondata>
+				<file file="${build.home}/jacoco.exec"/>
+			</executiondata>
+
+			<structure name="1_telibube">
+				<classfiles>
+					<fileset dir="${build.classes}"/>
+				</classfiles>
+				<sourcefiles encoding="UTF-8">
+					<fileset dir="${source.java}"/>
+				</sourcefiles>
+			</structure>
+
+			<!-- to produce reports in different formats. -->
+			<html destdir="${report.coverage}/tests"/>
+			<csv destfile="${report.coverage}/tests/report.csv"/>
+			<xml destfile="${report.coverage}/tests/report.xml"/>
+		</jacoco:report>
+	</target>
+
+	<target name="coverage-analyze-evosuite" depends="compile,compile-evosuite"
+	  description="Run Evosuite generated tests coverage analize">
+		<delete file="${build.home}/jacoco.exec" />
+		<delete dir="${report.coverage}/evosuite" />
+
+		<jacoco:coverage destfile="${build.home}/jacoco.exec">
+			<junit printsummary="yes" haltonfailure="no" fork="yes"
+			  showoutput="yes">
+				<formatter type="plain" usefile="false" />
+
+				<batchtest fork="yes">
+					<fileset dir="${evosuite.java}">
+						<include name="**/*.java"/>
+					</fileset>
+				</batchtest>
+
+				<classpath>
+					<pathelement path="${build.evosuite}" />
+					<pathelement path="${build.classes}" />
+					<path refid="source.lib" />
+					<path refid="evosuite.lib" />
+				</classpath>
+			</junit>
+		</jacoco:coverage>
+	
+		<jacoco:report>
+			<executiondata>
+				<file file="${build.home}/jacoco.exec"/>
+			</executiondata>
+
+			<structure name="1_telibube">
+				<classfiles>
+					<fileset dir="${build.classes}"/>
+				</classfiles>
+				<sourcefiles encoding="UTF-8">
+					<fileset dir="${source.java}"/>
+				</sourcefiles>
+			</structure>
+
+			<!-- to produce reports in different formats. -->
+			<html destdir="${report.coverage}/evosuite"/>
+			<csv destfile="${report.coverage}/evosuite/report.csv"/>
+			<xml destfile="${report.coverage}/evosuite/report.xml"/>
+		</jacoco:report>
+	</target>
+
+	<target name="coverage-analyze-judy" depends="compile,compile-judy"
+	  description="Run Judy generated tests coverage analize">
+		<delete file="${build.home}/jacoco.exec" />
+		<delete dir="${report.coverage}/judy" />
+
+		<jacoco:coverage destfile="${build.home}/jacoco.exec">
+			<junit printsummary="yes" haltonfailure="no" fork="yes"
+			  showoutput="yes">
+				<formatter type="plain" usefile="false" />
+
+				<batchtest fork="yes">
+					<fileset dir="${judy.java}">
+						<include name="**/*.java"/>
+					</fileset>
+				</batchtest>
+
+				<classpath>
+					<pathelement path="${build.judy}" />
+					<pathelement path="${build.classes}" />
+					<path refid="source.lib" />
+					<path refid="judy.lib" />
+				</classpath>
+			</junit>
+		</jacoco:coverage>
+	
+		<jacoco:report>
+			<executiondata>
+				<file file="${build.home}/jacoco.exec"/>
+			</executiondata>
+
+			<structure name="1_telibube">
+				<classfiles>
+					<fileset dir="${build.classes}"/>
+				</classfiles>
+				<sourcefiles encoding="UTF-8">
+					<fileset dir="${source.java}"/>
+				</sourcefiles>
+			</structure>
+
+			<!-- to produce reports in different formats. -->
+			<html destdir="${report.coverage}/judy"/>
+			<csv destfile="${report.coverage}/judy/report.csv"/>
+			<xml destfile="${report.coverage}/judy/report.xml"/>
+		</jacoco:report>
+	</target>
+
+	<target name="coverage-analyze-randoop" depends="compile,compile-randoop"
+	  description="Run Randoop generated tests coverage analize">
+		<delete file="${build.home}/jacoco.exec" />
+		<delete dir="${report.coverage}/randoop" />
+
+		<jacoco:coverage destfile="${build.home}/jacoco.exec">
+			<junit printsummary="yes" haltonfailure="no" fork="yes"
+			  showoutput="yes">
+				<formatter type="plain" usefile="false" />
+
+				<batchtest fork="yes">
+					<fileset dir="${randoop.java}">
+						<include name="**/*.java"/>
+					</fileset>
+				</batchtest>
+
+				<classpath>
+					<pathelement path="${build.randoop}" />
+					<pathelement path="${build.classes}" />
+					<path refid="source.lib" />
+					<path refid="randoop.lib" />
+				</classpath>
+			</junit>
+		</jacoco:coverage>
+	
+		<jacoco:report>
+			<executiondata>
+				<file file="${build.home}/jacoco.exec"/>
+			</executiondata>
+
+			<structure name="1_telibube">
+				<classfiles>
+					<fileset dir="${build.classes}"/>
+				</classfiles>
+				<sourcefiles encoding="UTF-8">
+					<fileset dir="${source.java}"/>
+				</sourcefiles>
+			</structure>
+
+			<!-- to produce reports in different formats. -->
+			<html destdir="${report.coverage}/randoop"/>
+			<csv destfile="${report.coverage}/randoop/report.csv"/>
+			<xml destfile="${report.coverage}/randoop/report.xml"/>
+		</jacoco:report>
+	</target>
+
+	<target name="judy-generate-tests" depends="compile">
+		<delete dir="${judy.java}" />
+		<delete dir="${build.judy}" />
+		<mkdir dir="${judy.java}" />
+		<java classname="pl.wroc.pwr.judy.generator.Main" fork="true">
+			<!--<jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5432" />-->
+			<arg line="-w ${basedir}/" />
+			<arg line="-c ${build.classes}" />
+			<arg line="-s ${source.java}" />
+			<arg line="-l lib" />
+			<arg line="-tt ${basedir}/tmp/judy-tests" />
+			<arg line="-td ${judy.java}" />
+			<arg line="-tn 100" />
+			<arg line="-mi 1" />
+
+			<classpath>
+				<pathelement path="${build.classes}" />
+				<path refid="source.lib" />
+				<path refid="judy.lib" />
+                        </classpath>
+		</java>
+	</target>
+
+	<target name="randoop-generate-tests" depends="compile">
+		<delete dir="${randoop.java}" />
+		<delete dir="${build.randoop}" />
+		<mkdir dir="${randoop.java}" />
+				
+		<java classname="randoop.main.Main" fork="true">
+			<arg value="gentests" />
+			<arg value="--classlist=${basedir}/class.list" />
+			<arg value="--maxsize=50" />
+			<arg value="--string-maxlen=100" />
+			<arg value="--small-tests=true" />
+			<arg value="--outputlimit=500" />
+			<arg value="--no-error-revealing-tests=true" />
+			<arg value="--junit-output-dir=${randoop.java}" />
+			<arg value="--testsperfile=10" />
+			<arg value="--only-test-public-members=true" />
+
+			<classpath>
+				<pathelement path="${build.classes}"/>
+				<path refid="source.lib" />
+				<path refid="randoop.lib" />
+                        </classpath>
+		</java>
+	</target>
+
+	<target name="evosuite-generate-tests" depends="compile">
+		<delete dir="${basedir}/evosuite-files" />
+		<delete dir="${evosuite.java}" />
+		<delete dir="${build.evosuite}" />
+		<mkdir dir="${evosuite.java}" />
+		<java classname="org.evosuite.EvoSuite" fork="true">
+			<arg line="-target ${build.classes}" />
+			<arg line="-projectCP ${build.classes}" />
+
+			<classpath>
+				<pathelement path="${build.classes}"/>
+				<path refid="source.lib" />
+				<path refid="evosuite.lib" />
+                        </classpath>
+		</java>
+
+		<exec executable="find">
+			<arg value="${evosuite.java}" />
+			<arg line="-type f" />
+			<arg line="-exec sed -i 's/separateClassLoader = true/separateClassLoader = false/' {} ;" />
+		</exec>
+	</target>
+
+	<target name="evosuite-analyze-class">
+		<delete dir="${basedir}/evosuite-files" />
+		<delete dir="${basedir}/evosuite-report" />
+
+		<path id="projectCP">
+			<pathelement path="${build.classes}" />
+			<pathelement path="${tests}" />
+			<path refid="source.lib" />
+			<path refid="${scope}.lib" />
+		</path>
+
+		<java classname="org.evosuite.EvoSuite" fork="true">
+			<arg line="-class ${testclass}" />
+			<arg value="-projectCP" />
+			<arg pathref="projectCP" />
+			<arg value="-measureCoverage" />
+			<arg value="-Djunit=${tests}" />
+			<arg line="-criterion WEAKMUTATION" />
+
+			<classpath>
+				<path refid="evosuite.lib" />
+			</classpath>
+		</java>
+
+		<move file="${basedir}/evosuite-report/statistics.csv" tofile="${report.evosuite}/${dir}/${testclass}.csv" />
+	</target>
+
+	<target name="evosuite-analyze-tests" depends="compile,compile-tests">
+		<delete dir="${basedir}/evosuite-files" />
+		<delete dir="${basedir}/evosuite-report" />
+		<delete dir="${report.evosuite}/tests" />
+		<mkdir dir="${report.evosuite}/tests" />
+
+		<exec executable="../run-evosuite.sh">
+			<arg value="test" />
+			<arg value="${build.tests}" />
+			<arg value="tests" />
+		</exec>
+	</target>
+
+	<target name="evosuite-analyze-evosuite" depends="compile,compile-evosuite">
+		<delete dir="${basedir}/evosuite-files" />
+		<delete dir="${basedir}/evosuite-report" />
+		<delete dir="${report.evosuite}/evosuite" />
+		<mkdir dir="${report.evosuite}/evosuite" />
+
+		<exec executable="../run-evosuite.sh">
+			<arg value="evosuite" />
+			<arg value="${build.evosuite}" />
+			<arg value="evosuite" />
+		</exec>
+	</target>
+
+	<target name="evosuite-analyze-judy" depends="compile,compile-judy">
+		<delete dir="${basedir}/evosuite-files" />
+		<delete dir="${basedir}/evosuite-report" />
+		<delete dir="${report.evosuite}/judy" />
+		<mkdir dir="${report.evosuite}/judy" />
+
+		<exec executable="../run-evosuite.sh">
+			<arg value="judy" />
+			<arg value="${build.judy}" />
+			<arg value="judy" />
+		</exec>
+	</target>
+
+	<target name="evosuite-analyze-randoop" depends="compile,compile-randoop">
+		<delete dir="${basedir}/evosuite-files" />
+		<delete dir="${basedir}/evosuite-report" />
+		<delete dir="${report.evosuite}/randoop" />
+		<mkdir dir="${report.evosuite}/randoop" />
+
+		<exec executable="../run-evosuite.sh">
+			<arg value="randoop" />
+			<arg value="${build.randoop}" />
+			<arg value="randoop" />
+		</exec>
+	</target>
+	
+	<target name="judy-analyze-tests" depends="compile,compile-tests">
+		<delete file="${basedir}/judy-result.xml" />		
+		<delete file="${report.judy}/judy-tests-${step}.xml" />
+
+		<path id="libs">
+			<path refid="source.lib" />
+			<path refid="test.lib" />
+		</path>
+
+		<java classname="pl.wroc.pwr.judy.cli.Judy" fork="true">
+			<arg line="-w ${basedir}/" />
+			<arg line="-c ${build.classes}" />
+			<arg line="-s ${source.java}" />
+			<arg line="-t ${build.tests}" />
+			<arg line="-l lib" />
+			<arg line="-l test-lib" />
+
+			<classpath>
+				<path refid="judy.lib" />
+			</classpath>
+		</java>
+
+		<move file="${basedir}/judy-result.xml" tofile="${report.judy}/tests-result-${step}.xml" />
+	</target>
+
+	<target name="judy-analyze-evosuite" depends="compile,compile-evosuite">
+		<delete file="${basedir}/judy-result.xml" />		
+		<delete file="${report.judy}/evosuite-result-${step}.xml" />
+
+		<java classname="pl.wroc.pwr.judy.cli.Judy" fork="true">
+			<!--<jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5432" />-->
+			<arg line="-w ${basedir}/" />
+			<arg line="-c ${build.classes}" />
+			<arg line="-s ${source.java}" />
+			<arg line="-t ${build.evosuite}" />
+			<arg line="-l lib" />
+
+			<classpath>
+				<path refid="judy.lib" />
+				<path refid="evosuite.lib" />
+			</classpath>
+		</java>
+
+		<move file="${basedir}/judy-result.xml" tofile="${report.judy}/evosuite-result-${step}.xml" />
+	</target>
+
+	<target name="judy-analyze-randoop" depends="compile,compile-randoop">
+		<delete file="${basedir}/judy-result.xml" />		
+		<delete file="${report.judy}/judy-randoop-${step}.xml" />
+
+		<java classname="pl.wroc.pwr.judy.cli.Judy" fork="true">
+			<!--<jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5432" />-->
+			<arg line="-w ${basedir}/" />
+			<arg line="-c ${build.classes}" />
+			<arg line="-s ${source.java}" />
+			<arg line="-t ${build.randoop}" />
+			<arg line="-l lib" />
+
+			<classpath>
+				<path refid="judy.lib" />
+			</classpath>
+		</java>
+
+		<move file="${basedir}/judy-result.xml" tofile="${report.judy}/randoop-result-${step}.xml" />
+	</target>
+
+	<target name="judy-analyze-judy" depends="compile,compile-judy">
+		<delete file="${basedir}/judy-result.xml" />		
+		<delete file="${report.judy}/judy-result-${step}.xml" />
+
+		<java classname="pl.wroc.pwr.judy.cli.Judy" fork="true">
+			<arg line="-w ${basedir}/" />
+			<arg line="-c ${build.classes}" />
+			<arg line="-s ${source.java}" />
+			<arg line="-t ${build.judy}" />
+			<arg line="-l lib" />
+
+			<classpath>
+				<path refid="judy.lib" />
+			</classpath>
+		</java>
+
+		<move file="${basedir}/judy-result.xml" tofile="${report.judy}/judy-result-${step}.xml" />
+	</target>
+
+</project>
